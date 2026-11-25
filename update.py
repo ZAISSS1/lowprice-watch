@@ -126,8 +126,7 @@ msg += [f"{nm[x['id']]} {x['close']:.2f}（{x['chg']:+.1%}）" + ("" if x["date"
 msg += ["不是投資建議"]
 with open(P("push.json"), "w", encoding="utf-8") as f:
     json.dump(dict(topic=os.environ.get("NTFY_TOPIC", ""), title=f"{'收盤提醒' if mode == 'close' else '09:00 開盤提醒：上個交易日'} {last[5:]}",
-                   message="
-".join(msg), click=URL), f, ensure_ascii=False)
+                   message=chr(10).join(msg), click=URL), f, ensure_ascii=False)
 state[mode] = today
 with open(P("state.json"), "w", encoding="utf-8") as f:
     json.dump(state, f)
