@@ -119,6 +119,15 @@ L += ["", f"上漲 {sum(x['chg'] > 0 for x in out)} 檔、下跌 {sum(x['chg'] <
       "", f"[看網頁]({URL})", "", "歷史回測、有存活者偏差、不是投資建議。🔴＝漲、🟢＝跌。"]
 with open(P("note.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(L))
+up, dn = sum(x["chg"] > 0 for x in out), sum(x["chg"] < 0 for x in out)
+avg = sum(x["since"] for x in out) / len(out)
+msg = [f"加權 {t['close']:,.0f}（{t['chg']:+.1%}）", f"漲 {up}／跌 {dn}，9 檔自 11/20 平均 {avg:+.1%}", "創新低：" + ("、".join(nl) if nl else "無")]
+msg += [f"{nm[x['id']]} {x['close']:.2f}（{x['chg']:+.1%}）" + ("" if x["date"] == last else " 未成交") for x in sorted(out, key=lambda v: -v["chg"])]
+msg += ["不是投資建議"]
+with open(P("push.json"), "w", encoding="utf-8") as f:
+    json.dump(dict(topic=os.environ.get("NTFY_TOPIC", ""), title=f"{'收盤提醒' if mode == 'close' else '09:00 開盤提醒：上個交易日'} {last[5:]}",
+                   message="
+".join(msg), click=URL), f, ensure_ascii=False)
 state[mode] = today
 with open(P("state.json"), "w", encoding="utf-8") as f:
     json.dump(state, f)

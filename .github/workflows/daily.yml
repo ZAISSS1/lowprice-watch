@@ -13,7 +13,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [refresh, close, open]
+        options: [refresh, close, open, test]
         default: refresh
 permissions:
   contents: write
@@ -58,7 +58,17 @@ jobs:
           python-version: '3.12'
       - name: 更新資料
         id: u
-        run: python update.py ${{ steps.m.outputs.mode }}
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          M: ${{ steps.m.outputs.mode }}
+        run: |
+          if [ "$M" = test ]; then rm -f state.json; python update.py close; git checkout -q state.json; echo "notify=" >> "$GITHUB_OUTPUT"; else python update.py "$M"; fi
+      - name: 手機推播（ntfy）
+        if: steps.u.outputs.notify == '1' || steps.m.outputs.mode == 'test'
+        run: |
+          test -f push.json
+          curl -sS --fail --retry 5 --retry-all-errors --retry-delay 10 -H 'Content-Type: application/json' --data-binary @push.json https://ntfy.sh/ -o /dev/null
+          rm -f push.json
       - name: 發提醒（GitHub 會寄信或推播給 repo 擁有者）
         if: steps.u.outputs.notify == '1'
         env:
