@@ -1,0 +1,87 @@
+name: 每日更新與提醒
+on:
+  push:
+    branches: [main]
+  schedule:              # UTC；GitHub 可能延遲，所以排多次，同一天只提醒一次
+    - cron: '13 0 * * 1-5'    # 台灣 08:13 起跑，等到 09:00
+    - cron: '43 0 * * 1-5'    # 08:43 備援
+    - cron: '11 1 * * 1-5'    # 09:11 備援
+    - cron: '17 7 * * 1-5'    # 15:17 收盤
+    - cron: '47 7 * * 1-5'    # 15:47 備援
+    - cron: '23 9 * * 1-5'    # 17:23 備援
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [refresh, close, open]
+        default: refresh
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  issues: write
+concurrency:
+  group: daily
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    environment:
+      name: github-pages
+      url: ${{ steps.dep.outputs.page_url }}
+    steps:
+      - name: 決定模式
+        id: m
+        env:
+          EV: ${{ github.event_name }}
+          SC: ${{ github.event.schedule }}
+          IN: ${{ inputs.mode }}
+        run: |
+          M=refresh
+          if [ "$EV" = workflow_dispatch ]; then M="$IN"; fi
+          if [ "$EV" = schedule ]; then
+            case "$SC" in *" 0 * * "*|*" 1 * * "*) M=open ;; *) M=close ;; esac
+            if [ "$M" = open ]; then
+              if [ "$(TZ=Asia/Taipei date +%-H%M)" -ge 1330 ]; then M=refresh; fi
+              T=$(TZ=Asia/Taipei date -d '09:00' +%s)
+              N=$(date +%s)
+              if [ "$N" -lt "$T" ]; then sleep $((T-N)); fi
+            fi
+          fi
+          echo "mode=$M" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 更新資料
+        id: u
+        run: python update.py ${{ steps.m.outputs.mode }}
+      - name: 發提醒（GitHub 會寄信或推播給 repo 擁有者）
+        if: steps.u.outputs.notify == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+          M: ${{ steps.m.outputs.mode }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          D=$(TZ=Asia/Taipei date +%m/%d)
+          if [ "$M" = close ]; then T="$D 收盤提醒"; else T="$D 09:00 開盤提醒"; fi
+          printf '\n\n@%s\n' "$OWNER" >> note.md
+          gh issue create -R "$R" --title "$T" --body-file note.md --assignee "$OWNER"
+          gh issue list -R "$R" --state open --author "app/github-actions" --limit 100 --json number -q '.[].number' | tail -n +7 | xargs -r -n1 gh issue close -R "$R"
+      - name: 存回 repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add site/data.json
+          if [ -f state.json ]; then git add state.json; fi
+          git diff --cached --quiet || { git commit -qm "資料更新 $(TZ=Asia/Taipei date '+%F %H:%M') [skip ci]"; git pull --rebase -q; git push -q; }
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: dep
+        uses: actions/deploy-pages@v4

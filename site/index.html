@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>低價股觀察</title><meta name="description" content="崩盤後低價股規則名單，每日收盤更新">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M4 9l9 13 5-6 10 8' fill='none' stroke='%23d0342c' stroke-width='4'/></svg>">
+<style>
+:root{--bg:#fff;--ink:#111214;--mute:#666b71;--line:#e6e7e9;--soft:#f5f6f7;--up:#d0342c;--dn:#0b7f55}
+@media(prefers-color-scheme:dark){:root{--bg:#101214;--ink:#f1f2f3;--mute:#979da4;--line:#272b30;--soft:#191c20;--up:#ff6b61;--dn:#3cc48f}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 "Helvetica Neue","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:980px;margin:auto;padding:40px 24px 64px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+h1{font-size:17px;font-weight:600;letter-spacing:.04em}
+.mute{color:var(--mute);font-size:13px}.up{color:var(--up)}.dn{color:var(--dn)}
+.num{font-variant-numeric:tabular-nums}
+.hero{padding:44px 0 36px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px}
+.big{font-size:clamp(52px,12vw,104px);font-weight:200;line-height:1;letter-spacing:-.04em}
+.facts{display:flex;gap:32px}.facts b{display:block;font-size:22px;font-weight:400;line-height:1.3}
+.warn{display:none;background:var(--soft);padding:10px 14px;margin-bottom:20px;font-size:14px}
+.row,.th{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1.3fr 130px;gap:12px;align-items:center;text-align:center}
+.row>:first-child,.th>:first-child{text-align:left}
+.th{color:var(--mute);font-size:12px;padding:8px 0;border-bottom:1px solid var(--ink)}
+details{border-bottom:1px solid var(--line)}summary{list-style:none;cursor:pointer;padding:14px 0}summary::-webkit-details-marker{display:none}
+summary:hover{background:var(--soft)}summary:focus-visible,button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.nm{font-size:17px;font-weight:600}.px{font-size:20px}
+.row svg{width:130px;height:34px;display:block}
+.more{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:4px 0 24px}.more h3{font-size:12px;color:var(--mute);font-weight:400;margin-bottom:4px}
+section{margin-top:48px}h2{font-size:15px;font-weight:600;margin-bottom:12px}
+p+p{margin-top:8px}
+button,input{font:inherit;color:inherit;background:none;border:1px solid var(--line);border-radius:2px;padding:8px 14px}
+button{cursor:pointer}button:hover:enabled{border-color:var(--ink)}button:disabled{color:var(--mute);cursor:default}input{width:110px;text-align:center}
+.bt{width:100%;border-collapse:collapse;text-align:center;font-size:14px;margin-top:12px}.bt th{font-weight:400;color:var(--mute);font-size:12px}.bt td,.bt th{padding:8px 4px;border-bottom:1px solid var(--line)}
+.lg{display:none}
+@media(max-width:700px){main{padding:24px 16px 48px}.row{grid-template-columns:1.4fr 1fr 1fr;row-gap:2px}.th,.row .sp,.row .sh{display:none}.lg{display:block;color:var(--mute);font-size:11px;line-height:1.3}.row .st{grid-column:1/-1;text-align:left;font-size:13px;color:var(--mute);display:flex;gap:16px}.st .lg{font-size:13px;line-height:inherit;color:inherit}.more{grid-template-columns:1fr;gap:12px}.hero{padding:28px 0}.facts{gap:24px}}
+</style></head><body><main>
+<header><h1>低價股觀察</h1><span class="mute num" id="upd">讀取中</span></header>
+<div class="hero"><div><div class="mute">9 檔平均，自 11/20</div><div class="big num" id="avg">…</div></div>
+<div class="facts num"><div><span class="mute">加權指數</span><b id="tx">…</b></div><div><span class="mute">當日漲／跌</span><b id="ud">…</b></div><div><span class="mute">創新低</span><b id="nl">…</b></div></div></div>
+<div class="warn" id="warn"></div>
+<div class="th"><span>股票</span><span>收盤</span><span>當日</span><span>自 11/20</span><span>狀態</span><span>近 40 日</span></div>
+<div id="list"></div>
+<section><h2>零股試算</h2><p>每檔 <input id="bud" type="number" min="0" step="1000" value="10000" aria-label="每檔金額"> 元，以最新收盤價估算，<span class="num" id="sum"></span></p><p class="mute">點開每一檔可以看股數。未含手續費。</p></section>
+<section><h2>提醒</h2><p>交易日收盤後與隔天 09:00，GitHub 會通知。網頁開著時，也可以跳出瀏覽器通知。</p><p><button id="ntf">開啟瀏覽器通知</button></p></section>
+<section><h2>怎麼選出來的</h2><p>5–15 元、崩盤跌 25% 以上、離 3 年高點跌 50% 以上、日均量 50 張以上、近四季與本業都有賺錢、營收衰退不到 10%、本淨比 1.2 以下、負債比 60% 以下。名單以 2026/11/20 收盤固定，不會自動換股。</p>
+<p>過去四次崩盤後，加上基本面條件沒有穩定勝過只看低價跌深。2000、2008 年沒有資料可驗證。</p>
+<table class="bt num"><tr><th>崩盤</th><th>檔數</th><th>1 年</th><th>3 年</th><th>對照 1 年</th></tr><tr><td>2015</td><td>14</td><td class="up">+51%</td><td class="up">+73%</td><td class="up">+24%</td></tr><tr><td>2020</td><td>22</td><td class="up">+126%</td><td class="up">+147%</td><td class="up">+145%</td></tr><tr><td>2022</td><td>2</td><td class="up">+28%</td><td class="up">+26%</td><td class="up">+18%</td></tr><tr><td>2025</td><td>4</td><td class="up">+24%</td><td>未滿</td><td class="up">+125%</td></tr></table>
+<p class="mute" style="margin-top:12px">對照：同樣低價跌深，不看基本面。</p></section>
+<section class="mute"><p>歷史回測、有存活者偏差、不是投資建議。價格未還原除權息；基本面資料到 2026/11/06。股價來源 FinMind。</p></section>
+</main><script>
+const $=i=>document.getElementById(i),f=(v,d=1)=>(v>0?'+':v<0?'−':'')+Math.abs(v*100).toFixed(d)+'%',c=v=>v>0?'up':v<0?'dn':'';
+const E=s=>String(s).replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]));
+let S,D;
+function spark(a){const lo=Math.min(...a),hi=Math.max(...a),p=a.map((v,i)=>(i/(a.length-1)*126+2).toFixed(1)+','+(31-(v-lo)/((hi-lo)||1)*28).toFixed(1)).join(' ');return `<svg viewBox="0 0 130 34" aria-hidden="true"><polyline points="${p}" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>`}
+function shares(){const b=Math.max(0,+$('bud').value||0);let t=0;D.rows.forEach(r=>{const n=Math.floor(b/r.close);t+=n*r.close;const e=$('q'+r.id);if(e)e.textContent=n.toLocaleString()+' 股，約 '+Math.round(n*r.close).toLocaleString()+' 元'});$('sum').textContent=`${D.rows.length} 檔合計約 ${Math.round(t).toLocaleString()} 元`}
+function draw(){const m=Object.fromEntries(S.map(s=>[s.id,s])),R=[...D.rows].sort((a,b)=>b.since-a.since),av=R.reduce((t,r)=>t+r.since,0)/R.length;
+$('upd').textContent='收盤資料 '+D.date;$('avg').textContent=f(av);$('avg').className='big num '+c(av);
+$('tx').innerHTML=Math.round(D.taiex.close).toLocaleString()+` <small class="${c(D.taiex.chg)}">${f(D.taiex.chg)}</small>`;
+$('ud').innerHTML=`<span class="up">${R.filter(r=>r.chg>0).length}</span> / <span class="dn">${R.filter(r=>r.chg<0).length}</span>`;$('nl').textContent=R.filter(r=>r.newlow).length+' 檔';
+const age=(Date.now()-new Date(D.date+'T15:00+08:00'))/864e5;$('warn').style.display=age>4.5?'block':'none';$('warn').textContent=`資料停在 ${D.date}，可能是連假或更新失敗。`;
+const open=new Set([...document.querySelectorAll('details[open]')].map(d=>d.dataset.id));
+$('list').innerHTML=R.map(r=>{const s=m[r.id];return `<details data-id="${r.id}" ${open.has(r.id)?'open':''}><summary><div class="row"><div><span class="nm">${E(s.name)}</span> <span class="mute num">${r.id}</span><div class="mute">${E(s.industry)}</div></div><div class="num px"><span class="lg">收盤</span>${r.close.toFixed(2)}</div><div class="num sh ${c(r.chg)}">${f(r.chg)}</div><div class="num ${c(r.since)}"><span class="lg">自 11/20</span>${f(r.since)}</div><div class="num st"><span>${r.date!==D.date?'未成交 '+r.date.slice(5):r.newlow?'<span class="dn">創新低</span>':'離低點 '+f(r.fromlow)}</span><span class="lg">當日 <span class="${c(r.chg)}">${f(r.chg)}</span></span></div><div class="sp ${c(r.since)}">${spark(r.spark)}</div></div></summary><div class="more"><div><h3>符合條件的理由（11/20）</h3>${s.why.map(E).join('<br>')}</div><div><h3>風險</h3>${s.risk.length?s.risk.map(E).join('<br>'):'沒有觸發規則中的風險標記，不代表沒有風險'}<h3 style="margin-top:12px">零股試算</h3><span class="num" id="q${r.id}"></span></div></div></details>`}).join('');shares()}
+async function load(){try{const g=u=>fetch(u+'?t='+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()});[S,D]=await Promise.all([g('stocks.json'),g('data.json')]);draw()}catch(e){$('upd').textContent='資料讀取失敗，請重新整理'}}
+const N=()=>'Notification'in window&&Notification.permission==='granted';
+function btn(){const b=$('ntf');if(!('Notification'in window)){b.textContent='這個瀏覽器不支援通知';b.disabled=true}else if(N()){b.textContent='瀏覽器通知已開啟';b.disabled=true}else if(Notification.permission==='denied'){b.textContent='通知被瀏覽器封鎖';b.disabled=true}}
+$('ntf').onclick=()=>Notification.requestPermission().then(btn);
+async function tick(){await load();if(!D||!N())return;const t=new Date(Date.now()+288e5).toISOString(),d=t.slice(0,10),h=t.slice(11,16),w=new Date(d).getUTCDay();let k;if(w>0&&w<6&&h>='09:00'&&h<'09:30'&&D.date<d)k='open';else if(h>='14:00'&&D.date===d)k='close';if(!k)return;
+try{if(localStorage[k]===d)return;new Notification(k==='open'?'開盤了，上一個交易日回顧':'今日收盤',{body:`9 檔自 11/20 平均 ${$('avg').textContent}，創新低 ${$('nl').textContent}（${D.date}）`});localStorage[k]=d}catch(e){}}
+$('bud').oninput=()=>D&&shares();btn();tick();setInterval(tick,60000);
+</script></body></html>
